@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Lý Sản Phẩm</title>
+    <style>
+        :root { --primary: #2563eb; --success: #16a34a; --danger: #dc2626; --warning: #d97706; --bg: #f3f4f6; --box: #ffffff; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; padding: 0; }
+        body { background-color: var(--bg); padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; display: grid; gap: 20px; grid-template-columns: 1fr; }
+        @media (min-width: 900px) { .container { grid-template-columns: 350px 1fr; } }
+        
+        .card { background: var(--box); padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        h2 { font-size: 1.2rem; margin-bottom: 15px; color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.9rem; margin-bottom: 5px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 0.95rem; }
+        
+        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; transition: 0.2s; text-align: center; display: inline-block; width: 100%; margin-bottom: 8px; }
+        .btn:hover { opacity: 0.8; }
+        .btn:disabled { opacity: 0.5; cursor: wait; }
+        .btn-primary { background: var(--primary); }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+        .btn-warning { background: var(--warning); }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        #toast { display: none; padding: 15px; border-radius: 5px; margin-bottom: 15px; text-align: center; font-weight: bold; }
+        .toast-ok { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .toast-err { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .toast-load { background: #e5e7eb; color: #374151; border: 1px solid #d1d5db; }
+
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        th { background: #f8fafc; color: #475569; font-weight: bold; }
+        tr:hover { background: #f1f5f9; cursor: pointer; }
+        .img-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; }
+        .badge-ok { background: #dcfce7; color: #166534; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; }
+        .badge-err { background: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="sidebar">
+        <div id="toast"></div>
+
+        <div class="card" style="margin-bottom: 20px;">
+            <h2>⚡ Cập Nhật Nhanh</h2>
+            <div class="form-group">
+                <label>Tên sản phẩm (Chính xác)</label>
+                <input type="text" id="qName" placeholder="Nhập tên sản phẩm để cập nhật nhanh">
+            </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Giá mới</label>
+                    <input type="number" id="qPrice" placeholder="Giá bán">
+                    <button class="btn btn-warning" onclick="quickAction('QUICK_PRICE')" id="btnQPrice" style="margin-top:5px;">Sửa Giá</button>
+                </div>
+                <div class="form-group">
+                    <label>Tồn kho mới</label>
+                    <input type="number" id="qStock" placeholder="Số lượng">
+                    <button class="btn btn-warning" onclick="quickAction('QUICK_STOCK')" id="btnQStock" style="margin-top:5px;">Sửa Tồn Kho</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📦 Quản Lý Toàn Diện</h2>
+            <div class="form-group">
+                <label>Tên sản phẩm (Định danh)</label>
+                <input type="text" id="fName" placeholder="Ví dụ: Áo thun nam">
+            </div>
+            <div class="grid-2">
+                <div class="form-group"><label>Giá bán</label><input type="number" id="fPrice"></div>
+                <div class="form-group"><label>Số lượng</label><input type="number" id="fStock"></div>
+            </div>
+            <div class="form-group">
+                <label>URL Hình ảnh</label>
+                <input type="text" id="fImg" placeholder="https://link-anh.com/anh.jpg">
+            </div>
+            <div class="form-group">
+                <label>Mô tả ngắn</label>
+                <textarea id="fDesc" rows="3"></textarea>
+            </div>
+            
+            <button class="btn btn-primary" onclick="fullAction('ADD')" id="btnAdd">Thêm Mới Sản Phẩm</button>
+            <button class="btn btn-success" onclick="fullAction('UPDATE_ALL')" id="btnUpdate">Lưu Chỉnh Sửa</button>
+            <button class="btn btn-danger" onclick="fullAction('DELETE')" id="btnDel">Xóa Sản Phẩm</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="card">
+            <h2>🔍 Danh Sách Sản Phẩm</h2>
+            <div class="grid-2">
+                <input type="text" id="searchInput" placeholder="Gõ tên để tìm kiếm..." onkeyup="searchData()">
+                <button class="btn btn-primary" onclick="loadData()">🔄 Làm Mới Dữ Liệu</button>
+            </div>
+            <div class="table-wrap" style="margin-top: 15px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Ảnh</th>
+                            <th>Tên Sản Phẩm</th>
+                            <th>Giá Bán</th>
+                            <th>Trạng Thái</th>
+                            <th>SL</th>
+                            <th>Cập Nhật</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="7" style="text-align:center;">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // BẮT BUỘC THAY THẾ URL SAU KHI DEPLOY
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUMEDeHeDW6O441OqRLHKkJYM0ohbmV8OuuvKAwHVqtRJQhZbT8lm7O7QLBBOObzhp/exec";
+    
+    let cacheData = [];
+
+    // Hiển thị thông báo
+    function showToast(msg, type) {
+        const t = document.getElementById("toast");
+        t.innerText = msg;
+        t.className = type;
+        t.style.display = "block";
+        if(type !== 'toast-load') setTimeout(() => t.style.display = "none", 4000);
+    }
+
+    // Khóa/Mở nút tránh click nhiều lần
+    function toggleButtons(disabled) {
+        document.querySelectorAll('.btn').forEach(b => b.disabled = disabled);
+    }
+
+    // Format tiền tệ
+    function formatMoney(num) {
+        if(!num || isNaN(num)) return "0 ₫";
+        return Number(num).toLocaleString('vi-VN') + " ₫";
+    }
+
+    // Load dữ liệu (GET)
+    async function loadData() {
+        document.getElementById("tableBody").innerHTML = '<tr><td colspan="7" style="text-align:center;">Đang đồng bộ...</td></tr>';
+        try {
+            const res = await fetch(`${SCRIPT_URL}?t=${Date.now()}`);
+            cacheData = await res.json();
+            renderTable(cacheData);
+        } catch (e) {
+            showToast("Lỗi tải dữ liệu. Kiểm tra mạng hoặc URL.", "toast-err");
+        }
+    }
+
+    // Render HTML Table
+    function renderTable(dataArray) {
+        const tbody = document.getElementById("tableBody");
+        tbody.innerHTML = "";
+        if (dataArray.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Không có sản phẩm nào.</td></tr>';
+            return;
+        }
+
+        dataArray.forEach(item => {
+            const tr = document.createElement("tr");
+            const badgeClass = item.status === "Còn hàng" ? "badge-ok" : "badge-err";
+            const imgSrc = item.image || "https://via.placeholder.com/50?text=No+Img";
+            
+            tr.innerHTML = `
+                <td>${item.stt}</td>
+                <td><img src="${imgSrc}" class="img-preview" alt="img"></td>
+                <td><strong>${item.name}</strong><br><small style="color:#64748b">${item.description || ''}</small></td>
+                <td style="color:var(--danger); font-weight:bold">${formatMoney(item.price)}</td>
+                <td><span class="${badgeClass}">${item.status}</span></td>
+                <td>${item.quantity || 0}</td>
+                <td style="font-size:0.8rem; color:#94a3b8">${item.updatedAt}</td>
+            `;
+
+            // Click vào dòng để điền form tự động
+            tr.onclick = () => {
+                document.getElementById("fName").value = item.name;
+                document.getElementById("fPrice").value = item.price;
+                document.getElementById("fStock").value = item.quantity;
+                document.getElementById("fImg").value = item.image;
+                document.getElementById("fDesc").value = item.description;
+                document.getElementById("qName").value = item.name;
+            };
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Tìm kiếm mờ (Fuzzy Search)
+    function searchData() {
+        const kw = document.getElementById("searchInput").value.toLowerCase().trim();
+        const filtered = cacheData.filter(item => item.name.toLowerCase().includes(kw));
+        renderTable(filtered);
+    }
+
+    // Gửi POST Request (Sử dụng text/plain để né CORS)
+    async function sendPostRequest(action, payload) {
+        toggleButtons(true);
+        showToast("Đang xử lý...", "toast-load");
+
+        try {
+            const res = await fetch(SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ action, payload })
+            });
+            const result = await res.json();
+            
+            if (result.success) {
+                showToast(result.message, "toast-ok");
+                loadData(); // Cập nhật lại bảng
+                
+                // Reset form nếu thêm mới thành công
+                if(action === "ADD") {
+                    document.querySelectorAll('input, textarea').forEach(i => i.value = "");
+                }
+            } else {
+                showToast(result.message, "toast-err");
+            }
+        } catch (e) {
+            showToast("Lỗi gửi dữ liệu. Mở F12 Console để xem chi tiết.", "toast-err");
+            console.error(e);
+        } finally {
+            toggleButtons(false);
+        }
+    }
+
+    // Nút chức năng Cập Nhật Nhanh
+    function quickAction(action) {
+        const name = document.getElementById("qName").value.trim();
+        if(!name) return alert("Vui lòng nhập Tên sản phẩm cần cập nhật nhanh!");
+
+        let payload = { name: name };
+        if (action === "QUICK_PRICE") payload.price = document.getElementById("qPrice").value;
+        if (action === "QUICK_STOCK") payload.quantity = document.getElementById("qStock").value;
+
+        sendPostRequest(action, payload);
+    }
+
+    // Nút chức năng Toàn Diện
+    function fullAction(action) {
+        const name = document.getElementById("fName").value.trim();
+        if(!name) return alert("Tên sản phẩm là bắt buộc!");
+
+        if (action === "DELETE" && !confirm(`Xóa vĩnh viễn sản phẩm: ${name}?`)) return;
+
+        const payload = {
+            name: name,
+            price: document.getElementById("fPrice").value,
+            quantity: document.getElementById("fStock").value,
+            image: document.getElementById("fImg").value,
+            description: document.getElementById("fDesc").value
+        };
+
+        sendPostRequest(action, payload);
+    }
+
+    // Khởi chạy khi mở web
+    window.onload = loadData;
+</script>
+</body>
+</html>
